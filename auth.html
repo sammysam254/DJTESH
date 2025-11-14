@@ -48,7 +48,6 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
     <script>
         // Initialize Supabase
         const SUPABASE_URL = 'https://tdvrxgvtxletskcgdiaq.supabase.co';
@@ -60,12 +59,14 @@
         // Toggle between login and signup forms
         document.getElementById('show-signup').addEventListener('click', (e) => {
             e.preventDefault();
+            console.log('Switching to signup form');
             document.getElementById('login-form').classList.remove('active');
             document.getElementById('signup-form').classList.add('active');
         });
 
         document.getElementById('show-login').addEventListener('click', (e) => {
             e.preventDefault();
+            console.log('Switching to login form');
             document.getElementById('signup-form').classList.remove('active');
             document.getElementById('login-form').classList.add('active');
         });
