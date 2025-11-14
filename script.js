@@ -117,3 +117,36 @@ document.querySelectorAll('.service-card, .gallery-item').forEach(el => {
     el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
     observer.observe(el);
 });
+
+// Check if user is logged in and show admin link if admin
+async function checkUserAuth() {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    const navAuth = document.querySelector('.nav-auth');
+    const navAdmin = document.querySelector('.nav-admin');
+    
+    if (session) {
+        // User is logged in
+        navAuth.textContent = 'Logout';
+        navAuth.href = '#';
+        navAuth.addEventListener('click', async (e) => {
+            e.preventDefault();
+            await supabase.auth.signOut();
+            window.location.reload();
+        });
+        
+        // Check if user is admin
+        const { data: userData } = await supabase
+            .from('users')
+            .select('is_admin')
+            .eq('id', session.user.id)
+            .single();
+        
+        if (userData && userData.is_admin) {
+            navAdmin.style.display = 'block';
+        }
+    }
+}
+
+// Run auth check on page load
+checkUserAuth();
