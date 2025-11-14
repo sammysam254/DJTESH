@@ -39,20 +39,60 @@ window.addEventListener('scroll', () => {
     }
 });
 
+// Initialize Supabase
+const SUPABASE_URL = 'https://tdvrxgvtxletskcgdiaq.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkdnJ4Z3Z0eGxldHNrY2dkaWFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4NTIzMzcsImV4cCI6MjA3NjQyODMzN30.6yhnA5cX_UyXk6u_ypAxap9HKymTZsnqThmItZP5FuE';
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // Form submission handler
 const contactForm = document.querySelector('.contact-form');
-contactForm.addEventListener('submit', (e) => {
+contactForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     // Get form data
     const formData = new FormData(contactForm);
+    const name = formData.get('name');
+    const email = formData.get('email');
+    const phone = formData.get('phone');
+    const eventDate = formData.get('event_date');
+    const message = formData.get('message');
     
-    // Here you would typically send the data to a server
-    // For now, we'll just show an alert
-    alert('Thank you for your inquiry! DJ Tesh will get back to you soon.');
+    // Show loading state
+    const submitBtn = contactForm.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Sending...';
+    submitBtn.disabled = true;
     
-    // Reset form
-    contactForm.reset();
+    try {
+        // Insert data into Supabase
+        const { data, error } = await supabase
+            .from('bookings')
+            .insert([
+                {
+                    name: name,
+                    email: email,
+                    phone: phone,
+                    event_date: eventDate,
+                    message: message,
+                    created_at: new Date().toISOString()
+                }
+            ]);
+        
+        if (error) throw error;
+        
+        // Success message
+        alert('Thank you for your inquiry! DJ Tesh will get back to you soon.');
+        contactForm.reset();
+        
+    } catch (error) {
+        console.error('Error submitting form:', error);
+        alert('There was an error submitting your request. Please try contacting us via WhatsApp.');
+    } finally {
+        // Reset button
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    }
 });
 
 // Intersection Observer for fade-in animations

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - DJ Tesh</title>
+    <link rel="icon" type="image/jpeg" href="logo.jpg">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="auth-styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Admin Header -->
+        <header class="admin-header">
+            <div class="admin-header-content">
+                <div class="admin-logo">
+                    <img src="logo.jpg" alt="DJ Tesh Logo">
+                    <h2>DJ TESH Admin Panel</h2>
+                </div>
+                <div class="admin-user-info">
+                    <span id="admin-email"></span>
+                    <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Admin Navigation -->
+        <nav class="admin-nav">
+            <button class="admin-nav-btn active" data-tab="bookings">Bookings</button>
+            <button class="admin-nav-btn" data-tab="users">Users</button>
+            <button class="admin-nav-btn" data-tab="stats">Statistics</button>
+        </nav>
+
+        <!-- Admin Content -->
+        <main class="admin-content">
+            <!-- Bookings Tab -->
+            <div id="bookings-tab" class="admin-tab active">
+                <h2>Booking Requests</h2>
+                <div class="admin-stats-cards">
+                    <div class="stat-card">
+                        <h3 id="total-bookings">0</h3>
+                        <p>Total Bookings</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="pending-bookings">0</h3>
+                        <p>Pending</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="confirmed-bookings">0</h3>
+                        <p>Confirmed</p>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Date Submitted</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Event Date</th>
+                                <th>Message</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookings-table-body">
+                            <tr>
+                                <td colspan="8" class="loading">Loading bookings...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Users Tab -->
+            <div id="users-tab" class="admin-tab">
+                <h2>Registered Users</h2>
+                <div class="admin-stats-cards">
+                    <div class="stat-card">
+                        <h3 id="total-users">0</h3>
+                        <p>Total Users</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="admin-users">0</h3>
+                        <p>Admins</p>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Joined Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <tr>
+                                <td colspan="4" class="loading">Loading users...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Statistics Tab -->
+            <div id="stats-tab" class="admin-tab">
+                <h2>Statistics</h2>
+                <div class="admin-stats-cards">
+                    <div class="stat-card">
+                        <h3 id="this-month-bookings">0</h3>
+                        <p>Bookings This Month</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="upcoming-events">0</h3>
+                        <p>Upcoming Events</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="new-users-month">0</h3>
+                        <p>New Users This Month</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Initialize Supabase
+        const SUPABASE_URL = 'https://tdvrxgvtxletskcgdiaq.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkdnJ4Z3Z0eGxldHNrY2dkaWFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4NTIzMzcsImV4cCI6MjA3NjQyODMzN30.6yhnA5cX_UyXk6u_ypAxap9HKymTZsnqThmItZP5FuE';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Check authentication and admin status
+        async function checkAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (!session) {
+                window.location.href = 'auth.html';
+                return;
+            }
+
+            // Check if user is admin
+            const { data: userData, error } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+
+            if (error || !userData || !userData.is_admin) {
+                alert('Access denied. Admin privileges required.');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Display admin email
+            document.getElementById('admin-email').textContent = session.user.email;
+            
+            // Load data
+            loadBookings();
+            loadUsers();
+            loadStatistics();
+        }
+
+        // Load bookings
+        async function loadBookings() {
+            try {
+                const { data, error } = await supabase
+                    .from('bookings')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                const tbody = document.getElementById('bookings-table-body');
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="no-data">No bookings yet</td></tr>';
+                    return;
+                }
+
+                // Update stats
+                document.getElementById('total-bookings').textContent = data.length;
+                const pending = data.filter(b => b.status === 'pending' || !b.status).length;
+                const confirmed = data.filter(b => b.status === 'confirmed').length;
+                document.getElementById('pending-bookings').textContent = pending;
+                document.getElementById('confirmed-bookings').textContent = confirmed;
+
+                data.forEach(booking => {
+                    const row = document.createElement('tr');
+                    const status = booking.status || 'pending';
+                    row.innerHTML = `
+                        <td>${new Date(booking.created_at).toLocaleDateString()}</td>
+                        <td>${booking.name}</td>
+                        <td>${booking.email}</td>
+                        <td>${booking.phone || 'N/A'}</td>
+                        <td>${booking.event_date ? new Date(booking.event_date).toLocaleDateString() : 'N/A'}</td>
+                        <td class="message-cell">${booking.message}</td>
+                        <td><span class="status-badge status-${status}">${status}</span></td>
+                        <td>
+                            <button class="btn-small btn-confirm" onclick="updateBookingStatus(${booking.id}, 'confirmed')">Confirm</button>
+                            <button class="btn-small btn-delete" onclick="deleteBooking(${booking.id})">Delete</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading bookings:', error);
+                document.getElementById('bookings-table-body').innerHTML = 
+                    '<tr><td colspan="8" class="error">Error loading bookings</td></tr>';
+            }
+        }
+
+        // Load users
+        async function loadUsers() {
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                const tbody = document.getElementById('users-table-body');
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="no-data">No users yet</td></tr>';
+                    return;
+                }
+
+                // Update stats
+                document.getElementById('total-users').textContent = data.length;
+                const admins = data.filter(u => u.is_admin).length;
+                document.getElementById('admin-users').textContent = admins;
+
+                data.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${user.full_name}</td>
+                        <td>${user.email}</td>
+                        <td><span class="role-badge ${user.is_admin ? 'role-admin' : 'role-user'}">${user.is_admin ? 'Admin' : 'User'}</span></td>
+                        <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('users-table-body').innerHTML = 
+                    '<tr><td colspan="4" class="error">Error loading users</td></tr>';
+            }
+        }
+
+        // Load statistics
+        async function loadStatistics() {
+            try {
+                const now = new Date();
+                const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+                // Bookings this month
+                const { data: monthBookings } = await supabase
+                    .from('bookings')
+                    .select('*')
+                    .gte('created_at', firstDayOfMonth);
+
+                document.getElementById('this-month-bookings').textContent = monthBookings?.length || 0;
+
+                // Upcoming events
+                const { data: upcomingEvents } = await supabase
+                    .from('bookings')
+                    .select('*')
+                    .gte('event_date', now.toISOString().split('T')[0]);
+
+                document.getElementById('upcoming-events').textContent = upcomingEvents?.length || 0;
+
+                // New users this month
+                const { data: newUsers } = await supabase
+                    .from('users')
+                    .select('*')
+                    .gte('created_at', firstDayOfMonth);
+
+                document.getElementById('new-users-month').textContent = newUsers?.length || 0;
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+            }
+        }
+
+        // Update booking status
+        async function updateBookingStatus(id, status) {
+            try {
+                const { error } = await supabase
+                    .from('bookings')
+                    .update({ status: status })
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                alert('Booking status updated!');
+                loadBookings();
+            } catch (error) {
+                console.error('Error updating booking:', error);
+                alert('Error updating booking status');
+            }
+        }
+
+        // Delete booking
+        async function deleteBooking(id) {
+            if (!confirm('Are you sure you want to delete this booking?')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('bookings')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                alert('Booking deleted!');
+                loadBookings();
+            } catch (error) {
+                console.error('Error deleting booking:', error);
+                alert('Error deleting booking');
+            }
+        }
+
+        // Tab navigation
+        document.querySelectorAll('.admin-nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active class from all buttons and tabs
+                document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+
+                // Add active class to clicked button and corresponding tab
+                btn.classList.add('active');
+                const tabId = btn.getAttribute('data-tab') + '-tab';
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            window.location.href = 'auth.html';
+        });
+
+        // Initialize
+        checkAuth();
+    </script>
+</body>
+</html>
