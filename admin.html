@@ -152,8 +152,25 @@
                 .eq('id', session.user.id)
                 .limit(1);
 
-            if (error || !userData || userData.length === 0 || !userData[0].is_admin) {
-                alert('Access denied. Admin privileges required.');
+            console.log('User data:', userData);
+            console.log('Error:', error);
+            console.log('Session user:', session.user);
+
+            if (error) {
+                console.error('Database error:', error);
+                alert('Error checking admin status: ' + error.message);
+                window.location.href = 'index.html';
+                return;
+            }
+
+            if (!userData || userData.length === 0) {
+                alert('User record not found. Please contact support.');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            if (!userData[0].is_admin) {
+                alert('Access denied. Admin privileges required. Email: ' + session.user.email);
                 window.location.href = 'index.html';
                 return;
             }

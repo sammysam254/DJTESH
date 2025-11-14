@@ -9,9 +9,14 @@ BEGIN
         NEW.id,
         NEW.email,
         COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
-        NEW.email = 'sammyseth260@gmail.com',
+        LOWER(NEW.email) = 'sammyseth260@gmail.com',
         NOW()
-    );
+    )
+    ON CONFLICT (id) DO UPDATE
+    SET 
+        email = EXCLUDED.email,
+        full_name = EXCLUDED.full_name,
+        is_admin = LOWER(EXCLUDED.email) = 'sammyseth260@gmail.com';
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
