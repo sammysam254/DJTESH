@@ -168,16 +168,26 @@
                     .from('users')
                     .select('*')
                     .eq('id', authData.user.id)
-                    .single();
+                    .limit(1);
                 
-                if (userError) throw userError;
+                if (userError) {
+                    console.error('User fetch error:', userError);
+                    throw userError;
+                }
+                
+                // Get the first user record (in case of duplicates)
+                const user = userData && userData.length > 0 ? userData[0] : null;
+                
+                if (!user) {
+                    throw new Error('User record not found');
+                }
                 
                 messageDiv.textContent = 'Login successful! Redirecting...';
                 messageDiv.classList.add('success');
                 
                 // Redirect based on admin status
                 setTimeout(() => {
-                    if (userData.is_admin) {
+                    if (user.is_admin) {
                         window.location.href = 'admin.html';
                     } else {
                         window.location.href = 'index.html';

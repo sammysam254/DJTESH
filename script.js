@@ -140,9 +140,9 @@ async function checkUserAuth() {
             .from('users')
             .select('is_admin')
             .eq('id', session.user.id)
-            .single();
+            .limit(1);
         
-        if (userData && userData.is_admin) {
+        if (userData && userData.length > 0 && userData[0].is_admin) {
             navAdmin.style.display = 'block';
         }
     }

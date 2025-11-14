@@ -150,9 +150,9 @@
                 .from('users')
                 .select('*')
                 .eq('id', session.user.id)
-                .single();
+                .limit(1);
 
-            if (error || !userData || !userData.is_admin) {
+            if (error || !userData || userData.length === 0 || !userData[0].is_admin) {
                 alert('Access denied. Admin privileges required.');
                 window.location.href = 'index.html';
                 return;
