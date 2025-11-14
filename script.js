@@ -65,8 +65,11 @@ contactForm.addEventListener('submit', async (e) => {
     submitBtn.disabled = true;
     
     try {
+        // Get current user session
+        const { data: { session } } = await supabase.auth.getSession();
+        
         // Insert data into Supabase
-        const { data, error } = await supabase
+        const { data, error} = await supabase
             .from('bookings')
             .insert([
                 {
@@ -75,6 +78,7 @@ contactForm.addEventListener('submit', async (e) => {
                     phone: phone,
                     event_date: eventDate,
                     message: message,
+                    user_id: session?.user?.id || null,
                     created_at: new Date().toISOString()
                 }
             ]);
@@ -124,6 +128,7 @@ async function checkUserAuth() {
     
     const navAuth = document.querySelector('.nav-auth');
     const navAdmin = document.querySelector('.nav-admin');
+    const navBookings = document.querySelector('.nav-bookings');
     
     if (session) {
         // User is logged in
@@ -134,6 +139,9 @@ async function checkUserAuth() {
             await supabase.auth.signOut();
             window.location.reload();
         });
+        
+        // Show My Bookings for all logged-in users
+        navBookings.style.display = 'block';
         
         // Check if user is admin
         const { data: userData } = await supabase

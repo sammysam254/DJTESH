@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings - DJ Tesh</title>
+    <link rel="icon" type="image/jpeg" href="logo.jpg">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="auth-styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">
+                <img src="logo.jpg" alt="DJ Tesh Logo">
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="my-bookings.html">My Bookings</a></li>
+                <li><a href="#" id="logout-link">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="my-bookings-section" style="padding: 120px 0 80px;">
+        <div class="container">
+            <h2 class="section-title">My Bookings</h2>
+            
+            <div id="bookings-container" class="bookings-list">
+                <p class="loading">Loading your bookings...</p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 DJ Tesh. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const SUPABASE_URL = 'https://tdvrxgvtxletskcgdiaq.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkdnJ4Z3Z0eGxldHNrY2dkaWFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4NTIzMzcsImV4cCI6MjA3NjQyODMzN30.6yhnA5cX_UyXk6u_ypAxap9HKymTZsnqThmItZP5FuE';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function loadMyBookings() {
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (!session) {
+                window.location.href = 'auth.html';
+                return;
+            }
+
+            const container = document.getElementById('bookings-container');
+
+            try {
+                const { data: bookings, error } = await supabase
+                    .from('bookings')
+                    .select('*')
+                    .eq('user_id', session.user.id)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (!bookings || bookings.length === 0) {
+                    container.innerHTML = '<p class="no-data">You haven\'t made any bookings yet.</p>';
+                    return;
+                }
+
+                container.innerHTML = bookings.map(booking => `
+                    <div class="booking-card">
+                        <div class="booking-header">
+                            <h3>${booking.name}</h3>
+                            <span class="status-badge status-${booking.status || 'pending'}">${booking.status || 'pending'}</span>
+                        </div>
+                        <div class="booking-details">
+                            <p><strong>Email:</strong> ${booking.email}</p>
+                            <p><strong>Phone:</strong> ${booking.phone || 'N/A'}</p>
+                            <p><strong>Event Date:</strong> ${booking.event_date ? new Date(booking.event_date).toLocaleDateString() : 'N/A'}</p>
+                            <p><strong>Message:</strong> ${booking.message}</p>
+                            <p><strong>Submitted:</strong> ${new Date(booking.created_at).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Error loading bookings:', error);
+                container.innerHTML = '<p class="error">Error loading bookings. Please try again.</p>';
+            }
+        }
+
+        document.getElementById('logout-link').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await supabase.auth.signOut();
+            window.location.href = 'index.html';
+        });
+
+        loadMyBookings();
+    </script>
+
+    <style>
+        .my-bookings-section {
+            min-height: 60vh;
+            background: #f5f5f5;
+        }
+
+        .bookings-list {
+            display: grid;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .booking-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .booking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .booking-header h3 {
+            color: var(--secondary-color);
+            margin: 0;
+        }
+
+        .booking-details p {
+            margin: 0.75rem 0;
+            color: #666;
+        }
+
+        .booking-details strong {
+            color: #333;
+        }
+
+        .loading, .no-data, .error {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+            font-size: 1.1rem;
+        }
+    </style>
+</body>
+</html>
