@@ -97,7 +97,7 @@
             submitBtn.disabled = true;
             
             try {
-                // Sign up with Supabase Auth
+                // Sign up with Supabase Auth (trigger will automatically create user record)
                 const { data: authData, error: authError } = await supabase.auth.signUp({
                     email: email,
                     password: password,
@@ -110,33 +110,24 @@
                 
                 if (authError) throw authError;
                 
+                if (!authData.user) {
+                    throw new Error('User creation failed');
+                }
+                
                 // Check if user is admin
                 const isAdmin = email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-                
-                // Store user info in users table
-                const { error: dbError } = await supabase
-                    .from('users')
-                    .insert([{
-                        id: authData.user.id,
-                        email: email,
-                        full_name: name,
-                        is_admin: isAdmin,
-                        created_at: new Date().toISOString()
-                    }]);
-                
-                if (dbError) throw dbError;
                 
                 messageDiv.textContent = 'Account created successfully! Redirecting...';
                 messageDiv.classList.add('success');
                 
-                // Redirect based on admin status
+                // Wait a moment for trigger to complete, then redirect
                 setTimeout(() => {
                     if (isAdmin) {
                         window.location.href = 'admin.html';
                     } else {
                         window.location.href = 'index.html';
                     }
-                }, 1500);
+                }, 2000);
                 
             } catch (error) {
                 console.error('Signup error:', error);
