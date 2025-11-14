@@ -164,7 +164,7 @@
                 if (authError) throw authError;
                 
                 // Get user info from database
-                const { data: userData, error: userError } = await supabase
+                let { data: userData, error: userError } = await supabase
                     .from('users')
                     .select('*')
                     .eq('id', authData.user.id)
@@ -176,10 +176,39 @@
                 }
                 
                 // Get the first user record (in case of duplicates)
-                const user = userData && userData.length > 0 ? userData[0] : null;
+                let user = userData && userData.length > 0 ? userData[0] : null;
+                
+                // If user record doesn't exist, create it
+                if (!user) {
+                    console.log('User record not found, creating one...');
+                    const isAdmin = email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+                    
+                    const { error: insertError } = await supabase
+                        .from('users')
+                        .insert([{
+                            id: authData.user.id,
+                            email: email,
+                            full_name: authData.user.user_metadata?.full_name || 'User',
+                            is_admin: isAdmin,
+                            created_at: new Date().toISOString()
+                        }]);
+                    
+                    if (insertError) {
+                        console.error('Error creating user record:', insertError);
+                    } else {
+                        // Fetch the newly created user
+                        const { data: newUserData } = await supabase
+                            .from('users')
+                            .select('*')
+                            .eq('id', authData.user.id)
+                            .limit(1);
+                        
+                        user = newUserData && newUserData.length > 0 ? newUserData[0] : null;
+                    }
+                }
                 
                 if (!user) {
-                    throw new Error('User record not found');
+                    throw new Error('Unable to create or fetch user record');
                 }
                 
                 messageDiv.textContent = 'Login successful! Redirecting...';
