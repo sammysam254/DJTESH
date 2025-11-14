@@ -158,3 +158,52 @@ async function checkUserAuth() {
 
 // Run auth check on page load
 checkUserAuth();
+
+// Hero Slideshow
+let currentSlide = 0;
+let heroImages = [];
+
+async function loadHeroSlideshow() {
+    try {
+        const { data, error } = await supabase
+            .from('hero_images')
+            .select('*')
+            .eq('is_active', true)
+            .order('display_order', { ascending: true });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            heroImages = data;
+            const slideshow = document.getElementById('hero-slideshow');
+            
+            // Create slide elements
+            heroImages.forEach((image, index) => {
+                const slide = document.createElement('div');
+                slide.className = 'hero-slide';
+                slide.style.backgroundImage = `url(${image.image_url})`;
+                if (index === 0) slide.classList.add('active');
+                slideshow.appendChild(slide);
+            });
+
+            // Start slideshow if more than one image
+            if (heroImages.length > 1) {
+                setInterval(nextSlide, 5000);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading hero slideshow:', error);
+    }
+}
+
+function nextSlide() {
+    const slides = document.querySelectorAll('.hero-slide');
+    if (slides.length === 0) return;
+
+    slides[currentSlide].classList.remove('active');
+    currentSlide = (currentSlide + 1) % slides.length;
+    slides[currentSlide].classList.add('active');
+}
+
+// Load hero slideshow on page load
+loadHeroSlideshow();

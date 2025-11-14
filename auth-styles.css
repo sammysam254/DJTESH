@@ -391,3 +391,32 @@
         min-width: 800px;
     }
 }
+
+
+/* Hero Images Grid */
+.hero-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.hero-image-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.hero-image-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.hero-image-actions {
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
